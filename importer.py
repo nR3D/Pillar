@@ -2,8 +2,8 @@ from models import Obj
 import numpy as np
 from pathlib import Path
 
-def import_obj(file_path : str) -> Obj:
-    res_obj = Obj([])
+def import_obj(file_path : str, **kwargs) -> Obj:
+    res_obj = Obj([], kwargs=kwargs)
     for line in open(Path(file_path)):
         line = line.rstrip('\n').split(' ')
         if line[0] == 'v':
