@@ -15,20 +15,18 @@ class Obj():
         camera coordinate system.
         """
         points_camera = list()
-        # transformation is applied to the camera, so the object will have an inverted view
-        camera = transform_matrix({'matrix':camera, 'scaling':(1,1,1)})
         for vertex in self.vertices:
             p_camera = camera.dot(vertex)
             points_camera.append(p_camera.A1)
         return points_camera
 
-    def _apply_vertices(self, matrix) -> None:
+    def _apply_vertices(self, matrix : np.matrix) -> None:
         """
         Iter through self.vertices to apply a matrix tranformation
         """
         transformed_vertices = list()
         for vertex in self.vertices:
-            transformed_vertices.append(matrix.dot(vertex))
+            transformed_vertices.append(matrix.dot(vertex).A1)
         self.vertices = transformed_vertices
 
     def transform(self, op={}) -> None:
@@ -49,6 +47,10 @@ class Obj():
         rotation_matrix = transform_matrix({'rotation':(x,y,z)})
         self._apply_vertices(rotation_matrix)
 
-    def scale(self, x, y, z) -> None:
+    def scale(self, x, y=None, z=None) -> None:
+        if y is None:
+            y = x
+        if z is None:
+           z = y
         scaling_matrix = transform_matrix({'scaling':(x,y,z)})
         self._apply_vertices(scaling_matrix)

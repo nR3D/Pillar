@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw
 import numpy as np
 
-def transform_matrix(op={}) -> np.array:
+def transform_matrix(op={}) -> np.matrix:
     result_matrix = op['matrix'] if 'matrix' in op else np.identity(4)
     if('translation' in op):
         x, y, z = op['translation']
@@ -28,10 +28,10 @@ def transform_matrix(op={}) -> np.array:
         result_matrix[0,0] *= x
         result_matrix[1,1] *= y
         result_matrix[2,2] *= z
-    return result_matrix
+    return np.matrix(result_matrix)
 
 
-def render(camera : np.matrix, objects=[]):
+def render(camera : np.matrix, objects=[], **kwargs):
     """ 
         Image rasterisation, convert a list of Obj instances using
         a coordinate system 
@@ -51,14 +51,26 @@ def render(camera : np.matrix, objects=[]):
             # convert 3d space to canvas space
             if vertex[2] > 0:
                 print("Not visible, vertex:", vertex[:3])
-            if not vertex[2]:  # vertex[2] == 0 would lead to infinity in the next expression
+            if not vertex[2]:  # vertex[2] == 0 would lead to division by zero in the next expression
                 x = img.size[0] * vertex[0]
                 y = img.size[1] * vertex[1]
             else:
                 x = img.size[0] * ((vertex[0] / -vertex[2]) + w/2)/w
                 y = img.size[1] * (1-((vertex[1] / -vertex[2]) + h/2)/h)
             vertices.append((x,y))
+        depth_faces = list()
         for face in obj.faces:
+            if not len(depth_faces):
+                depth_faces.append(face)
+            else:
+                for i in range(len(depth_faces)):  # raw z-depth implementation (doesn't work for crossing faces)
+                    if sum([obj.vertices[f-obj.INDEX_OFFSET][2] for f in face])/len(face) < sum(
+                            obj.vertices[f-obj.INDEX_OFFSET][2] for f in depth_faces[i])/len(depth_faces[i]):
+                        depth_faces.insert(i, face)
+                        break
+                    elif i == len(depth_faces) - 1:
+                        depth_faces.append(face)
+        for face in depth_faces:
             # draw faces (or wireframe)
             draw_face = list()
             visible = False
@@ -67,11 +79,8 @@ def render(camera : np.matrix, objects=[]):
                 x, y = draw_face[-1]
                 if (x >= 0 and x <= img.size[0]) or (y >= 0 and y <= img.size[1]):
                     visible = True
-                    print(x, y)
-                else:
-                    print("not visible", x, y)
-            if(visible):
-                if(obj.WIREFRAME):
+            if visible:
+                if kwargs['WIREFRAME'] if 'WIREFRAME' in kwargs else obj.WIREFRAME:
                     edges = list()
                     for i in range(len(draw_face)):
                         # connect near vertices to an edge
@@ -84,7 +93,8 @@ def render(camera : np.matrix, objects=[]):
                     draw.line(edges, fill="#FF0000")
                 else:
                     draw.polygon(draw_face, fill="#888888")
-        if obj.DRAW_VERTICES:
+        if kwargs['DRAW_VERTICES'] if 'DRAW_VERTICES' in kwargs else obj.DRAW_VERTICES:
             draw.point(tuple((v[0],v[1]) for v in vertices), fill="#00FF00")  # draw vertices
         points_3d_to_2d[obj] = vertices
     img.show()
+

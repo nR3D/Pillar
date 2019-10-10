@@ -1,22 +1,11 @@
-from PIL import Image, ImageDraw
-import numpy as np
-from models import Obj
 from importer import import_obj
 from renderer import transform_matrix, render
+from objs.create import *
     
 if __name__ == "__main__":
-    v1 = np.array([-10, -10, -10, 1])
-    v2 = np.array([10, -10, -10, 1])
-    v3 = np.array([10, -10, 10, 1])
-    v4 = np.array([-10, -10, 10, 1])
-    v5 = np.array([-10, 10, -10, 1])
-    v6 = np.array([10, 10, -10, 1])
-    v7 = np.array([10, 10, 10, 1])
-    v8 = np.array([-10, 10, 10, 1])
-    o1 = Obj([v1,v2,v3,v4,v5,v6,v7,v8], faces=[(1,2,3,4),(1,5,8,4),(6,7,3,2),(5,6,2,1),(5,6,7,8),(8,7,3,4)], WIREFRAME=True, DRAW_VERTICES=True)
-    o2 = Obj([v1,v2,v3], faces=[(1,2,3)])
-    #oi = import_obj('./objs/tree.obj')
-    coordinate_system = transform_matrix({'rotation':(0,120,0), 'translation':(0,0,-50), 'scaling':(1,1,1)})
+    o2 = cylinder(height=0.1, radius=3, inner_radius=1.7, segments=100)
+    o2.rotate(0,0,10)
+    coordinate_system = transform_matrix({'rotation':(20,0,0), 'translation':(0,0,-7), 'scaling':(1,1,1)})
     print("Camera coordinate system:", coordinate_system, sep='\n')
-    render(coordinate_system, [o1,])
+    render(coordinate_system, [o2,], WIREFRAME=True, DRAW_VERTICES=False)
     
