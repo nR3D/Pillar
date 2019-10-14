@@ -1,15 +1,15 @@
 from PIL import Image, ImageDraw
 import numpy as np
 
-def transform_matrix(op={}) -> np.matrix:
-    result_matrix = op['matrix'] if 'matrix' in op else np.identity(4)
-    if('translation' in op):
-        x, y, z = op['translation']
+def transform_matrix(**kwargs) -> np.matrix:
+    result_matrix = kwargs.get('matrix', np.identity(4))
+    if('translation' in kwargs):
+        x, y, z = kwargs['translation']
         result_matrix[0,3] += x
         result_matrix[1,3] += y
         result_matrix[2,3] += z
-    if('rotation' in op):
-        x, y, z = np.radians(op['rotation'])
+    if('rotation' in kwargs):
+        x, y, z = np.radians(kwargs['rotation'])
         rotation_z = np.matrix([[np.cos(z), -np.sin(z), 0, 0],
                                 [np.sin(z), np.cos(z), 0, 0],
                                 [0, 0, 1, 0],
@@ -23,13 +23,33 @@ def transform_matrix(op={}) -> np.matrix:
                                 [-np.sin(y), 0, np.cos(y), 0],
                                 [0, 0, 0, 1]])
         result_matrix = result_matrix.dot(rotation_z.dot(rotation_x.dot(rotation_y)))
-    if('scaling' in op):
-        x, y, z = op['scaling']
+    if('scaling' in kwargs):
+        x, y, z = kwargs['scaling']
         result_matrix[0,0] *= x
         result_matrix[1,1] *= y
         result_matrix[2,2] *= z
     return np.matrix(result_matrix)
 
+def render_vertices(vertices : list, img : Image.Image, color="#00FF00"):
+    draw = ImageDraw.Draw(img)
+    draw.point(tuple((v[0],v[1]) for v in vertices), fill=color)  # draw vertices
+
+def render_wireframe(faces : list, img : Image.Image, color="#FF0000"): 
+    draw = ImageDraw.Draw(img)
+    edges = list()
+    for i in range(len(faces)):
+        # connect near vertices to an edge
+        edges.append(faces[i])
+        if(i == len(faces)-1):
+            # the last vertex must be connected to the first
+            edges.append(faces[0])
+        else:
+            edges.append(faces[i+1])
+    draw.line(edges, fill=color)
+
+def render_solid_face(faces : list, img : Image.Image, color="#888888"): 
+    draw = ImageDraw.Draw(img)
+    draw.polygon(faces, fill=color)
 
 def render(camera : np.matrix, objects=[], **kwargs):
     """ 
@@ -38,7 +58,6 @@ def render(camera : np.matrix, objects=[], **kwargs):
     """
     # define canvas
     img = Image.new('RGB', (500,500))
-    draw = ImageDraw.Draw(img)
     # canvas virtual size (pixel size is expressed by img.size)
     w = 1
     h = w * img.size[1]/img.size[0]
@@ -47,7 +66,7 @@ def render(camera : np.matrix, objects=[], **kwargs):
     for obj in objects:
         # for each object convert vertices to camera CoordinateSystem and draw them
         vertices = list()
-        for vertex in obj.to_camera(camera):
+        for vertex in obj.iter_vertices(camera):
             # convert 3d space to canvas space
             if vertex[2] > 0:
                 print("Not visible, vertex:", vertex[:3])
@@ -81,20 +100,11 @@ def render(camera : np.matrix, objects=[], **kwargs):
                     visible = True
             if visible:
                 if kwargs['WIREFRAME'] if 'WIREFRAME' in kwargs else obj.WIREFRAME:
-                    edges = list()
-                    for i in range(len(draw_face)):
-                        # connect near vertices to an edge
-                        edges.append(draw_face[i])
-                        if(i == len(draw_face)-1):
-                            # the last vertex must be connected to the first
-                            edges.append(draw_face[0])
-                        else:
-                            edges.append(draw_face[i+1])
-                    draw.line(edges, fill="#FF0000")
+                    render_wireframe(draw_face, img)
                 else:
-                    draw.polygon(draw_face, fill="#888888")
+                    render_solid_face(draw_face, img)
         if kwargs['DRAW_VERTICES'] if 'DRAW_VERTICES' in kwargs else obj.DRAW_VERTICES:
-            draw.point(tuple((v[0],v[1]) for v in vertices), fill="#00FF00")  # draw vertices
+            render_vertices(vertices, img)
         points_3d_to_2d[obj] = vertices
     img.show()
 
