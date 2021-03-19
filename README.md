@@ -8,4 +8,4 @@ Any `.obj` file can be rendered using `Obj.from_file()` (see `example.py`). Alte
 
 `Obj`s can be translated, rotated, and scaled.
 
-Class `Renderer` (through its method `render()`) will display any list of `Obj`s; camera position can be adjusted using using a `Tranformation` object.
+Class `Renderer` (through its method `render()`) will display any list of `Obj`s; camera position can be adjusted using a `Tranformation` object.
