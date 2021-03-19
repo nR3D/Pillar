@@ -1,4 +1,4 @@
-from models import Obj
+from pillar import Obj
 from math import pi, cos, sin
 
 def cylinder(radius=1, height=5, segments=20, inner_radius=0):
